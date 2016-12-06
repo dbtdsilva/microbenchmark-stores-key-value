@@ -20,6 +20,30 @@ endif()
 
 include_directories(${microbenchmarks_SOURCE_DIR})
 
+### LevelDB Compilation, it offers the benchmark service
+set(leveldb_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/external/leveldb)
+ExternalProject_Add(
+    leveldb
+    PREFIX ${leveldb_PREFIX}
+    URL "https://github.com/google/leveldb/archive/v1.19.tar.gz"
+    URL_MD5 "6c201409cce6b711f46d68e0f4b1090a"
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND $(MAKE)
+    INSTALL_COMMAND ""
+    BUILD_IN_SOURCE 1
+    LOG_UPDATE ON
+    LOG_BUILD ON
+    LOG_INSTALL ON
+)
+set(leveldb_INCLUDE_DIRS 
+    ${leveldb_PREFIX}/src/leveldb 
+    ${leveldb_PREFIX}/src/leveldb/include)
+set(leveldb_LIBRARIES 
+    ${leveldb_PREFIX}/src/leveldb/out-static/libleveldb.a
+    ${leveldb_PREFIX}/src/leveldb/out-static/util/testutil.o)
+include_directories(${leveldb_INCLUDE_DIRS})
+
+### LMDB Compilation
 set(lmdb_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/external/lmdb)
 ExternalProject_Add(
     lmdb
@@ -39,23 +63,16 @@ set(lmdb_LIBRARIES ${lmdb_PREFIX}/src/lmdb/libraries/liblmdb/liblmdb.a)
 include_directories(${lmdb_INCLUDE_DIRS}/src/lmdb/libraries/liblmdb)
 message(STATUS "Using LMDB from ${lmdb_LIBRARIES}")
 
-
 set(LINKLIBS
     ${lmdb_LIBRARIES}
-    ${microbenchmarks_SOURCE_DIR}/leveldb-1.19/out-static/libleveldb.a
-    ${microbenchmarks_SOURCE_DIR}/leveldb-1.19/out-static/util/testutil.o
+    ${leveldb_LIBRARIES}
 )
-
-include_directories(${microbenchmarks_SOURCE_DIR}/leveldb-1.19)
-include_directories(${microbenchmarks_SOURCE_DIR}/leveldb-1.19/include)
 
 add_executable(
     benchmark
     db_bench_mdb.cc
-    ${microbenchmarks_SOURCE_DIR}/leveldb-1.19
 )
 target_link_libraries(benchmark ${LINKLIBS} -fno-builtin-memcmp -pthread -DOS_LINUX -DLEVELDB_PLATFORM_POSIX 
     -DLEVELDB_ATOMIC_PRESENT -DSNAPPY -O2 -DNDEBUG -fPIC -lsnappy)
 add_dependencies(benchmark lmdb)
 set_target_properties(benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
-

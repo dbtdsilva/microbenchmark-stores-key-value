@@ -39,16 +39,23 @@ set(lmdb_LIBRARIES ${lmdb_PREFIX}/src/lmdb/libraries/liblmdb/liblmdb.a)
 include_directories(${lmdb_INCLUDE_DIRS}/src/lmdb/libraries/liblmdb)
 message(STATUS "Using LMDB from ${lmdb_LIBRARIES}")
 
+
 set(LINKLIBS
     ${lmdb_LIBRARIES}
+    ${microbenchmarks_SOURCE_DIR}/leveldb-1.19/out-static/libleveldb.a
+    ${microbenchmarks_SOURCE_DIR}/leveldb-1.19/out-static/util/testutil.o
 )
+
+include_directories(${microbenchmarks_SOURCE_DIR}/leveldb-1.19)
+include_directories(${microbenchmarks_SOURCE_DIR}/leveldb-1.19/include)
 
 add_executable(
     benchmark
-    test.cpp
+    db_bench_mdb.cc
+    ${microbenchmarks_SOURCE_DIR}/leveldb-1.19
 )
-
-target_link_libraries(benchmark ${LINKLIBS})
+target_link_libraries(benchmark ${LINKLIBS} -fno-builtin-memcmp -pthread -DOS_LINUX -DLEVELDB_PLATFORM_POSIX 
+    -DLEVELDB_ATOMIC_PRESENT -DSNAPPY -O2 -DNDEBUG -fPIC -lsnappy)
 add_dependencies(benchmark lmdb)
 set_target_properties(benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
 

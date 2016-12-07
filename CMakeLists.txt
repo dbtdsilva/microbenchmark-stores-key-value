@@ -97,7 +97,6 @@ target_link_libraries(lmdb_benchmark ${LMDB_LINKLIBS} -fno-builtin-memcmp -pthre
 add_dependencies(lmdb_benchmark lmdb)
 set_target_properties(lmdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
 
-
 set(BDB_LIBRARIES
     ${lmdb_LIBRARIES}
     ${leveldb_LIBRARIES}
@@ -110,3 +109,14 @@ add_executable(
 target_link_libraries(bdb_benchmark ${BDB_LIBRARIES} -fno-builtin-memcmp -pthread -fPIC -lsnappy)
 add_dependencies(bdb_benchmark bdb)
 set_target_properties(bdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
+
+set(LEVELDB_LIBRARIES
+    ${leveldb_LIBRARIES}
+)
+add_executable(
+    leveldb_benchmark
+    db_bench_leveldb.cc
+)
+target_link_libraries(leveldb_benchmark ${LEVELDB_LIBRARIES} -fno-builtin-memcmp -pthread -fPIC -lsnappy)
+add_dependencies(leveldb_benchmark leveldb)
+set_target_properties(leveldb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")

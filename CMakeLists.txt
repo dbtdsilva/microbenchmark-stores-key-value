@@ -82,11 +82,11 @@ set(bdb_LIBRARIES ${bdb_PREFIX}/lib/lib/libdb.a)
 include_directories(${bdb_INCLUDE_DIRS}/lib/include)
 
 ### Linkage and executable
+## LMDB
 set(LMDB_LINKLIBS
     ${lmdb_LIBRARIES}
     ${leveldb_LIBRARIES}
 )
-
 add_executable(
     lmdb_benchmark
     db_bench_mdb.cc
@@ -96,7 +96,7 @@ target_link_libraries(lmdb_benchmark ${LMDB_LINKLIBS} -fno-builtin-memcmp -pthre
 add_dependencies(lmdb_benchmark lmdb)
 set_target_properties(lmdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
 
-
+## BDB
 set(BDB_LIBRARIES
     ${lmdb_LIBRARIES}
     ${leveldb_LIBRARIES}

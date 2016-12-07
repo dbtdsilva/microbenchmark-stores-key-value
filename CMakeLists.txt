@@ -40,6 +40,7 @@ set(leveldb_INCLUDE_DIRS
     ${leveldb_PREFIX}/src/leveldb/include)
 set(leveldb_LIBRARIES 
     ${leveldb_PREFIX}/src/leveldb/out-static/libleveldb.a
+    ${leveldb_PREFIX}/src/leveldb/out-static/libmemenv.a
     ${leveldb_PREFIX}/src/leveldb/out-static/util/testutil.o)
 include_directories(${leveldb_INCLUDE_DIRS})
 
@@ -82,21 +83,21 @@ set(bdb_LIBRARIES ${bdb_PREFIX}/lib/lib/libdb.a)
 include_directories(${bdb_INCLUDE_DIRS}/lib/include)
 
 ### Linkage and executable
-## LMDB
+add_definitions(-DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DLEVELDB_ATOMIC_PRESENT -DSNAPPY -DNDEBUG -O3)
 set(LMDB_LINKLIBS
     ${lmdb_LIBRARIES}
     ${leveldb_LIBRARIES}
 )
+
 add_executable(
     lmdb_benchmark
     db_bench_mdb.cc
 )
-target_link_libraries(lmdb_benchmark ${LMDB_LINKLIBS} -fno-builtin-memcmp -pthread -DOS_LINUX -DLEVELDB_PLATFORM_POSIX 
-    -DLEVELDB_ATOMIC_PRESENT -DSNAPPY -O2 -DNDEBUG -fPIC -lsnappy)
+target_link_libraries(lmdb_benchmark ${LMDB_LINKLIBS} -fno-builtin-memcmp -pthread -fPIC -lsnappy)
 add_dependencies(lmdb_benchmark lmdb)
 set_target_properties(lmdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
 
-## BDB
+
 set(BDB_LIBRARIES
     ${lmdb_LIBRARIES}
     ${leveldb_LIBRARIES}
@@ -106,7 +107,6 @@ add_executable(
     bdb_benchmark
     db_bench_bdb.cc
 )
-target_link_libraries(bdb_benchmark ${BDB_LIBRARIES} -fno-builtin-memcmp -pthread -DOS_LINUX -DLEVELDB_PLATFORM_POSIX 
-    -DLEVELDB_ATOMIC_PRESENT -DSNAPPY -O2 -DNDEBUG -fPIC -lsnappy)
+target_link_libraries(bdb_benchmark ${BDB_LIBRARIES} -fno-builtin-memcmp -pthread -fPIC -lsnappy)
 add_dependencies(bdb_benchmark bdb)
 set_target_properties(bdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")

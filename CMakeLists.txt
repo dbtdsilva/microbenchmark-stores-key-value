@@ -58,21 +58,55 @@ ExternalProject_Add(
     LOG_BUILD ON
     LOG_INSTALL ON
 )
-set(lmdb_INCLUDE_DIRS ${lmdb_PREFIX})
+set(lmdb_INCLUDE_DIRS ${lmdb_PREFIX}/src/lmdb/libraries/liblmdb)
 set(lmdb_LIBRARIES ${lmdb_PREFIX}/src/lmdb/libraries/liblmdb/liblmdb.a)
-include_directories(${lmdb_INCLUDE_DIRS}/src/lmdb/libraries/liblmdb)
-message(STATUS "Using LMDB from ${lmdb_LIBRARIES}")
+include_directories(${lmdb_INCLUDE_DIRS})
 
-set(LINKLIBS
+### BerkeleyDB Compilation
+set(bdb_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/external/bdb)
+ExternalProject_Add(
+    bdb
+    PREFIX ${bdb_PREFIX}
+    URL "http://download.oracle.com/berkeley-db/db-6.2.23.tar.gz"
+    URL_MD5 "9da126afb937a48171ff1e569ce67cf1"
+    CONFIGURE_COMMAND CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_C_COMPILER} ${bdb_PREFIX}/src/bdb/dist/configure --prefix=${bdb_PREFIX}/lib -enable-shared=no --enable-cxx
+    BUILD_COMMAND $(MAKE)
+    INSTALL_COMMAND $(MAKE) install
+    BUILD_IN_SOURCE 1
+    LOG_UPDATE ON
+    LOG_BUILD ON
+    LOG_INSTALL ON
+)
+set(bdb_INCLUDE_DIRS ${bdb_PREFIX})
+set(bdb_LIBRARIES ${bdb_PREFIX}/lib/lib/libdb.a)
+include_directories(${bdb_INCLUDE_DIRS}/lib/include)
+
+### Linkage and executable
+set(LMDB_LINKLIBS
     ${lmdb_LIBRARIES}
     ${leveldb_LIBRARIES}
 )
 
 add_executable(
-    benchmark
+    lmdb_benchmark
     db_bench_mdb.cc
 )
-target_link_libraries(benchmark ${LINKLIBS} -fno-builtin-memcmp -pthread -DOS_LINUX -DLEVELDB_PLATFORM_POSIX 
+target_link_libraries(lmdb_benchmark ${LMDB_LINKLIBS} -fno-builtin-memcmp -pthread -DOS_LINUX -DLEVELDB_PLATFORM_POSIX 
     -DLEVELDB_ATOMIC_PRESENT -DSNAPPY -O2 -DNDEBUG -fPIC -lsnappy)
-add_dependencies(benchmark lmdb)
-set_target_properties(benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
+add_dependencies(lmdb_benchmark lmdb)
+set_target_properties(lmdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
+
+
+set(BDB_LIBRARIES
+    ${lmdb_LIBRARIES}
+    ${leveldb_LIBRARIES}
+    ${bdb_LIBRARIES}
+)
+add_executable(
+    bdb_benchmark
+    db_bench_bdb.cc
+)
+target_link_libraries(bdb_benchmark ${BDB_LIBRARIES} -fno-builtin-memcmp -pthread -DOS_LINUX -DLEVELDB_PLATFORM_POSIX 
+    -DLEVELDB_ATOMIC_PRESENT -DSNAPPY -O2 -DNDEBUG -fPIC -lsnappy)
+add_dependencies(bdb_benchmark bdb)
+set_target_properties(bdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")

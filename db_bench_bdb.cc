@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <db.h>
+#include "random.h"
 #include "util/histogram.h"
-#include "util/random.h"
 #include "util/testutil.h"
 
 // Comma-separated list of operations to run in the specified order

@@ -27,26 +27,26 @@
 //   readrand100K  -- read N/1000 100K values in sequential order in async mode
 //   readrandom    -- read N times in random order
 static const char* FLAGS_benchmarks =
-    "fillseqsync,"
-    "fillrandsync,"
-    "fillseq,"
-    "fillseqbatch,"
-    "fillrandom,"
-    "fillrandbatch,"
-    "overwrite,"
+  "fillseqsync,"
+  "fillrandsync,"
+  "fillseq,"
+  "fillseqbatch,"
+  "fillrandom,"
+  "fillrandbatch,"
+  "overwrite,"
 #if 0
-    "overwritebatch,"
+  "overwritebatch,"
 #endif
-    "readrandom,"
-    "readseq,"
-    "readreverse,"
+  "readrandom,"
+  "readseq,"
+  "readreverse,"
 #if 0
-    "fillrand100K,"
-    "fillseq100K,"
-    "readseq100K,"
-    "readrand100K,"
+  "fillrand100K,"
+  "fillseq100K,"
+  "readseq100K,"
+  "readrand100K,"
 #endif
-    ;
+  ;
 
 // Number of key/values to place in database
 static int FLAGS_num = 1000000;
@@ -56,6 +56,9 @@ static int FLAGS_reads = -1;
 
 // Size of each value
 static int FLAGS_value_size = 100;
+
+// Number of key/values to place in database
+static int FLAGS_batch = 1000;
 
 // Arrange to generate values that shrink to this fraction of
 // their original size after compression
@@ -88,11 +91,11 @@ namespace leveldb {
 // Helper for quickly generating random data.
 namespace {
 class RandomGenerator {
- private:
+private:
   std::string data_;
   int pos_;
 
- public:
+public:
   RandomGenerator() {
     // We use a limited amount of data over and over again and ensure
     // that it is larger than the compression window (32KB), and also
@@ -124,7 +127,7 @@ static Slice TrimSpace(Slice s) {
     start++;
   }
   int limit = s.size();
-  while (limit > start && isspace(s[limit-1])) {
+  while (limit > start && isspace(s[limit - 1])) {
     limit--;
   }
   return Slice(s.data() + start, limit - start);
@@ -133,7 +136,7 @@ static Slice TrimSpace(Slice s) {
 }  // namespace
 
 class Benchmark {
- private:
+private:
   DB_ENV *db_;
   DB *dbh_;
   int db_num_;
@@ -173,7 +176,7 @@ class Benchmark {
 #if defined(__GNUC__) && !defined(__OPTIMIZE__)
     fprintf(stdout,
             "WARNING: Optimization is disabled: benchmarks unnecessarily slow\n"
-            );
+           );
 #endif
 #ifndef NDEBUG
     fprintf(stdout,
@@ -280,7 +283,7 @@ class Benchmark {
     fflush(stdout);
   }
 
- public:
+public:
   enum Order {
     SEQUENTIAL,
     RANDOM
@@ -291,18 +294,18 @@ class Benchmark {
   };
   enum DBFlags {
     NONE = 0,
-  	SYNC,
-	INT
+    SYNC,
+    INT
   };
 
   Benchmark()
-  : db_(NULL),
-  	dbh_(NULL),
-    db_num_(0),
-    num_(FLAGS_num),
-    reads_(FLAGS_reads < 0 ? FLAGS_num : FLAGS_reads),
-    bytes_(0),
-    rand_(301) {
+    : db_(NULL),
+      dbh_(NULL),
+      db_num_(0),
+      num_(FLAGS_num),
+      reads_(FLAGS_reads < 0 ? FLAGS_num : FLAGS_reads),
+      bytes_(0),
+      rand_(301) {
     std::vector<std::string> files;
     std::string test_dir;
     Env::Default()->GetTestDirectory(&test_dir);
@@ -320,10 +323,10 @@ class Benchmark {
   }
 
   ~Benchmark() {
-  	if (dbh_)
-		dbh_->close(dbh_, 0);
-	if (db_)
-		db_->close(db_, 0);
+    if (dbh_)
+      dbh_->close(dbh_, 0);
+    if (db_)
+      db_->close(db_, 0);
   }
 
   void Run() {
@@ -341,50 +344,50 @@ class Benchmark {
         benchmarks = sep + 1;
       }
 
-	  num_ = FLAGS_num;
+      num_ = FLAGS_num;
       Start();
 
       bool known = true, writer = false;
-	  DBFlags flags = NONE;
+      DBFlags flags = NONE;
       if (name == Slice("fillseq")) {
-	writer = true;
+        writer = true;
         Write(flags, SEQUENTIAL, FRESH, num_, FLAGS_value_size, 1);
       } else if (name == Slice("fillseqbatch")) {
-	writer = true;
-        Write(flags, SEQUENTIAL, FRESH, num_, FLAGS_value_size, 1000);
+        writer = true;
+        Write(flags, SEQUENTIAL, FRESH, num_, FLAGS_value_size, FLAGS_batch);
       } else if (name == Slice("fillrandom")) {
-	writer = true;
+        writer = true;
         Write(flags, RANDOM, FRESH, num_, FLAGS_value_size, 1);
       } else if (name == Slice("fillrandbatch")) {
-	writer = true;
-        Write(flags, RANDOM, FRESH, num_, FLAGS_value_size, 1000);
+        writer = true;
+        Write(flags, RANDOM, FRESH, num_, FLAGS_value_size, FLAGS_batch);
       } else if (name == Slice("overwrite")) {
-	writer = true;
+        writer = true;
         Write(flags, RANDOM, EXISTING, num_, FLAGS_value_size, 1);
       } else if (name == Slice("overwritebatch")) {
-	writer = true;
-        Write(flags, RANDOM, EXISTING, num_, FLAGS_value_size, 1000);
+        writer = true;
+        Write(flags, RANDOM, EXISTING, num_, FLAGS_value_size, FLAGS_batch);
       } else if (name == Slice("fillrandsync")) {
-	writer = true;
+        writer = true;
         flags = SYNC;
 #if 1
-		num_ /= 1000;
-		if (num_<10) num_=10;
+        num_ /= 1000;
+        if (num_ < 10) num_ = 10;
 #endif
         Write(flags, RANDOM, FRESH, num_, FLAGS_value_size, 1);
       } else if (name == Slice("fillseqsync")) {
-	writer = true;
+        writer = true;
         flags = SYNC;
 #if 1
-		num_ /= 1000;
-		if (num_<10) num_=10;
+        num_ /= 1000;
+        if (num_ < 10) num_ = 10;
 #endif
         Write(flags, SEQUENTIAL, FRESH, num_, FLAGS_value_size, 1);
       } else if (name == Slice("fillrand100K")) {
-	writer = true;
+        writer = true;
         Write(flags, RANDOM, FRESH, num_ / 1000, 100 * 1000, 1);
       } else if (name == Slice("fillseq100K")) {
-	writer = true;
+        writer = true;
         Write(flags, SEQUENTIAL, FRESH, num_ / 1000, 100 * 1000, 1);
       } else if (name == Slice("readseq")) {
         ReadSequential();
@@ -410,22 +413,22 @@ class Benchmark {
       }
       if (known) {
         Stop(name);
-	if (writer) {
-	  char cmd[200];
-	  std::string test_dir;
-	  Env::Default()->GetTestDirectory(&test_dir);
-	  sprintf(cmd, "du %s", test_dir.c_str());
-	  system(cmd);
-	}
+        if (writer) {
+          char cmd[200];
+          std::string test_dir;
+          Env::Default()->GetTestDirectory(&test_dir);
+          sprintf(cmd, "du %s", test_dir.c_str());
+          system(cmd);
+        }
       }
     }
   }
 
- private:
-    void Open(DBFlags flags) {
+private:
+  void Open(DBFlags flags) {
     assert(db_ == NULL);
-	int rc;
-	DB_TXN *txn;
+    int rc;
+    DB_TXN *txn;
 
     char file_name[100], cmd[200];
     db_num_++;
@@ -436,27 +439,27 @@ class Benchmark {
              test_dir.c_str(),
              db_num_);
 
-	sprintf(cmd, "mkdir -p %s", file_name);
-	system(cmd);
+    sprintf(cmd, "mkdir -p %s", file_name);
+    system(cmd);
 
-	int env_opt = DB_REGION_INIT;
+    int env_opt = DB_REGION_INIT;
 
     // Create tuning options and open the database
-	rc = db_env_create(&db_, 0);
-	rc = db_->set_cachesize(db_, 0, FLAGS_cache_size, 1);
-	rc = db_->set_lk_max_locks(db_, 100000);
-	rc = db_->set_lk_max_objects(db_, 100000);
-	if (flags != SYNC)
-		env_opt |= DB_TXN_WRITE_NOSYNC;
-	rc =db_->set_flags(db_, env_opt, 1);
-	rc =db_->log_set_config(db_, DB_LOG_AUTO_REMOVE, 1);
-#define TXN_FLAGS	(DB_INIT_LOCK|DB_INIT_LOG|DB_INIT_TXN|DB_INIT_MPOOL|DB_CREATE|DB_THREAD)
-	rc = db_->open(db_, file_name, TXN_FLAGS, 0664);
-	if (rc) {
+    rc = db_env_create(&db_, 0);
+    rc = db_->set_cachesize(db_, 0, FLAGS_cache_size, 1);
+    rc = db_->set_lk_max_locks(db_, 100000);
+    rc = db_->set_lk_max_objects(db_, 100000);
+    if (flags != SYNC)
+      env_opt |= DB_TXN_WRITE_NOSYNC;
+    rc = db_->set_flags(db_, env_opt, 1);
+    rc = db_->log_set_config(db_, DB_LOG_AUTO_REMOVE, 1);
+#define TXN_FLAGS (DB_INIT_LOCK|DB_INIT_LOG|DB_INIT_TXN|DB_INIT_MPOOL|DB_CREATE|DB_THREAD)
+    rc = db_->open(db_, file_name, TXN_FLAGS, 0664);
+    if (rc) {
       fprintf(stderr, "open error: %s\n", db_strerror(rc));
     }
-	rc = db_create(&dbh_, db_, 0);
-	rc = dbh_->open(dbh_, NULL, "data.bdb", NULL, DB_BTREE, DB_AUTO_COMMIT|DB_CREATE|DB_THREAD, 0664);
+    rc = db_create(&dbh_, db_, 0);
+    rc = dbh_->open(dbh_, NULL, "data.bdb", NULL, DB_BTREE, DB_AUTO_COMMIT | DB_CREATE | DB_THREAD, 0664);
   }
 
   void Write(DBFlags flags, Order order, DBState state,
@@ -467,22 +470,22 @@ class Benchmark {
         message_ = "skipping (--use_existing_db is true)";
         return;
       }
-	  if (db_) {
-		  char cmd[200];
-		  sprintf(cmd, "rm -rf %s*", FLAGS_db);
-		  dbh_->close(dbh_, 0);
-		  db_->close(db_, 0);
-		  system(cmd);
-		  db_ = NULL;
-		  dbh_ = NULL;
-	  }
+      if (db_) {
+        char cmd[200];
+        sprintf(cmd, "rm -rf %s*", FLAGS_db);
+        dbh_->close(dbh_, 0);
+        db_->close(db_, 0);
+        system(cmd);
+        db_ = NULL;
+        dbh_ = NULL;
+      }
       Open(flags);
     } else {
-	db_->txn_checkpoint(db_,0,0,DB_FORCE);
+      db_->txn_checkpoint(db_, 0, 0, DB_FORCE);
     }
 
     if (order == RANDOM)
-	  rand_.Shuffle(shuff, num_entries);
+      rand_.Shuffle(shuff, num_entries);
 
     Start();  // Do not count time taken to destroy/open
 
@@ -492,84 +495,84 @@ class Benchmark {
       message_ = msg;
     }
 
-	DBT mkey, mval;
-	DB_TXN *txn;
-	char key[100];
-	mkey.data = key;
-	mval.size = value_size;
-	mkey.flags = 0; mval.flags = 0;
+    DBT mkey, mval;
+    DB_TXN *txn;
+    char key[100];
+    mkey.data = key;
+    mval.size = value_size;
+    mkey.flags = 0; mval.flags = 0;
     // Write to database
-    for (int i = 0; i < num_entries; i+= entries_per_batch)
+    for (int i = 0; i < num_entries; i += entries_per_batch)
     {
-	  db_->txn_begin(db_, NULL, &txn, 0);
-	  
-	  for (int j=0; j < entries_per_batch; j++) {
+      db_->txn_begin(db_, NULL, &txn, 0);
 
-      const int k = (order == SEQUENTIAL) ? i+j : shuff[i+j];
-	  int rc, flag = 0;
-	  mkey.size = snprintf(key, sizeof(key), "%016d", k);
-      bytes_ += value_size + mkey.size;
-	  mval.data = (void *)gen_.Generate(value_size).data();
-	  rc = dbh_->put(dbh_, txn, &mkey, &mval, 0);
-      if (rc) {
-        fprintf(stderr, "set error: %s\n", db_strerror(rc));
+      for (int j = 0; j < entries_per_batch; j++) {
+
+        const int k = (order == SEQUENTIAL) ? i + j : shuff[i + j];
+        int rc, flag = 0;
+        mkey.size = snprintf(key, sizeof(key), "%016d", k);
+        bytes_ += value_size + mkey.size;
+        mval.data = (void *)gen_.Generate(value_size).data();
+        rc = dbh_->put(dbh_, txn, &mkey, &mval, 0);
+        if (rc) {
+          fprintf(stderr, "set error: %s\n", db_strerror(rc));
+        }
+        FinishedSingleOp();
       }
-      FinishedSingleOp();
-	  }
-	  txn->commit(txn, 0);
+      txn->commit(txn, 0);
     }
   }
 
   void ReadReverse() {
     DB_TXN *txn;
-	DBC *cursor;
-	DBT key, data;
+    DBC *cursor;
+    DBT key, data;
 
-	key.flags = 0; data.flags = 0;
-	db_->txn_begin(db_, NULL, &txn, 0);
-	dbh_->cursor(dbh_, txn, &cursor, 0);
+    key.flags = 0; data.flags = 0;
+    db_->txn_begin(db_, NULL, &txn, 0);
+    dbh_->cursor(dbh_, txn, &cursor, 0);
     while (cursor->get(cursor, &key, &data, DB_PREV) == 0) {
       bytes_ += key.size + data.size;
       FinishedSingleOp();
     }
-	cursor->close(cursor);
-	txn->abort(txn);
+    cursor->close(cursor);
+    txn->abort(txn);
   }
 
   void ReadSequential() {
     DB_TXN *txn;
-	DBC *cursor;
-	DBT key, data;
+    DBC *cursor;
+    DBT key, data;
 
-	key.flags = 0; data.flags = 0;
-	db_->txn_begin(db_, NULL, &txn, 0);
-	dbh_->cursor(dbh_, txn, &cursor, 0);
+    key.flags = 0; data.flags = 0;
+    db_->txn_begin(db_, NULL, &txn, 0);
+    dbh_->cursor(dbh_, txn, &cursor, 0);
     while (cursor->get(cursor, &key, &data, DB_NEXT) == 0) {
       bytes_ += key.size + data.size;
       FinishedSingleOp();
     }
-	cursor->close(cursor);
-	txn->abort(txn);
+    cursor->close(cursor);
+    txn->abort(txn);
   }
 
   void ReadRandom() {
     DB_TXN *txn;
-	DBC *cursor;
-	DBT key, data;
+    DBC *cursor;
+    DBT key, data;
     char ckey[100];
 
-	key.flags = 0; data.flags = 0;
-	key.data = ckey;
-	db_->txn_begin(db_, NULL, &txn, 0);
-	dbh_->cursor(dbh_, txn, &cursor, 0);
+    key.flags = 0; data.flags = 0;
+    key.data = ckey;
+    db_->txn_begin(db_, NULL, &txn, 0);
+    dbh_->cursor(dbh_, txn, &cursor, 0);
     for (int i = 0; i < reads_; i++) {
       const int k = rand_.Next() % reads_;
       key.size = snprintf(ckey, sizeof(ckey), "%016d", k);
-	  cursor->get(cursor, &key, &data, DB_SET);
+      cursor->get(cursor, &key, &data, DB_SET);
       FinishedSingleOp();
     }
-	cursor->close(cursor);
-	txn->abort(txn);
+    cursor->close(cursor);
+    txn->abort(txn);
   }
 };
 
@@ -606,14 +609,14 @@ int main(int argc, char** argv) {
 
   // Choose a location for the test database if none given with --db=<path>
   if (FLAGS_db == NULL) {
-      leveldb::Env::Default()->GetTestDirectory(&default_db_path);
-      default_db_path += "/dbbench";
-      FLAGS_db = default_db_path.c_str();
+    leveldb::Env::Default()->GetTestDirectory(&default_db_path);
+    default_db_path += "/dbbench";
+    FLAGS_db = default_db_path.c_str();
   }
 
   shuff = (int *)malloc(FLAGS_num * sizeof(int));
-  for (int i=0; i<FLAGS_num; i++)
-   shuff[i] = i;
+  for (int i = 0; i < FLAGS_num; i++)
+    shuff[i] = i;
   leveldb::Benchmark benchmark;
   benchmark.Run();
   return 0;

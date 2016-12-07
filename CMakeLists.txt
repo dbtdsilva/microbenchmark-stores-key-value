@@ -18,6 +18,12 @@ if (NOT CXX11)
     message(FATAL_ERROR "C++ compiler doesn't support C++11")
 endif()
 
+find_package(ZLIB)
+if (NOT ZLIB_FOUND)
+    message(FATAL_ERROR "Couldn't find zlib library")
+endif()
+include_directories(${ZLIB_INCLUDE_DIRS})
+
 include_directories(${microbenchmarks_SOURCE_DIR})
 
 ### LevelDB Compilation, it offers the benchmark service
@@ -82,8 +88,29 @@ set(bdb_INCLUDE_DIRS ${bdb_PREFIX})
 set(bdb_LIBRARIES ${bdb_PREFIX}/lib/lib/libdb.a)
 include_directories(${bdb_INCLUDE_DIRS}/lib/include)
 
+### Kyoto Compilation
+set(kyoto_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/external/kyoto)
+ExternalProject_Add(
+    kyoto
+    PREFIX ${kyoto_PREFIX}
+    URL "http://fallabs.com/kyotocabinet/pkg/kyotocabinet-1.2.76.tar.gz"
+    URL_MD5 "b925d369d7ed4a37cf0013409046738c"
+    CONFIGURE_COMMAND CXX=g++-5 CC=gcc-5 ${kyoto_PREFIX}/src/kyoto/configure --prefix=${kyoto_PREFIX}/lib 
+    BUILD_COMMAND $(MAKE)
+    INSTALL_COMMAND $(MAKE) install
+    BUILD_IN_SOURCE 1
+    LOG_UPDATE ON
+    LOG_BUILD ON
+    LOG_INSTALL ON
+)
+set(kyoto_INCLUDE_DIRS ${kyoto_PREFIX}/lib/include)
+set(kyoto_LIBRARIES ${kyoto_PREFIX}/lib/lib/libkyotocabinet.a)
+include_directories(${kyoto_INCLUDE_DIRS})
+
 ### Linkage and executable
+## General definitions
 add_definitions(-DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DLEVELDB_ATOMIC_PRESENT -DSNAPPY -DNDEBUG -O3)
+## LMDB
 set(LMDB_LINKLIBS
     ${lmdb_LIBRARIES}
     ${leveldb_LIBRARIES}
@@ -97,8 +124,8 @@ target_link_libraries(lmdb_benchmark ${LMDB_LINKLIBS} -fno-builtin-memcmp -pthre
 add_dependencies(lmdb_benchmark lmdb)
 set_target_properties(lmdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
 
+## BDB
 set(BDB_LIBRARIES
-    ${lmdb_LIBRARIES}
     ${leveldb_LIBRARIES}
     ${bdb_LIBRARIES}
 )
@@ -110,6 +137,20 @@ target_link_libraries(bdb_benchmark ${BDB_LIBRARIES} -fno-builtin-memcmp -pthrea
 add_dependencies(bdb_benchmark bdb)
 set_target_properties(bdb_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
 
+## Koyot Cabinet
+set(KYOTO_LIBRARIES
+    ${leveldb_LIBRARIES}
+    ${kyoto_LIBRARIES}
+)
+add_executable(
+    kyoto_benchmark
+    db_bench_tree_db.cc
+)
+target_link_libraries(kyoto_benchmark ${KYOTO_LIBRARIES} -fno-builtin-memcmp -pthread -fPIC -lsnappy -lz)
+add_dependencies(kyoto_benchmark kyoto)
+set_target_properties(kyoto_benchmark PROPERTIES COMPILE_FLAGS "-std=c++14 -O3")
+
+## LevelDB
 set(LEVELDB_LIBRARIES
     ${leveldb_LIBRARIES}
 )

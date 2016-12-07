@@ -1,10 +1,6 @@
 project(microbenchmarks)
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
-if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-    message(FATAL_ERROR "Doesn't support non 64-bit platforms")
-endif()
-
 include(FindThreads)
 include(CheckTypeSize)
 include(CheckIncludeFiles)
